@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YTNotes - Generate Notes from YouTube Videos</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/marked/marked.min.css">
+    <style>
+        body {
+            padding-top: 20px;
+            background-color: #f8f9fa;
+        }
+        .hero-section {
+            background-color: #343a40;
+            color: white;
+            padding: 3rem 0;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+        .notes-container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        #notes-content {
+            min-height: 200px;
+        }
+        .loader {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+        .action-buttons {
+            margin: 20px 0;
+        }
+        #video-preview {
+            max-width: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="hero-section text-center">
+            <h1><i class="bi bi-youtube text-danger"></i> YTNotes</h1>
+            <p class="lead">Generate comprehensive notes from any YouTube video</p>
+        </div>
+        
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <form id="youtube-form">
+                            <div class="mb-3">
+                                <label for="youtube-url" class="form-label">YouTube Video URL</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
+                                    <input type="text" class="form-control" id="youtube-url" 
+                                        placeholder="https://www.youtube.com/watch?v=..." required>
+                                    <button type="submit" class="btn btn-primary" id="generate-btn">
+                                        <i class="bi bi-magic"></i> Generate Notes
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                        
+                        <div id="video-preview" class="d-none">
+                            <div class="ratio ratio-16x9">
+                                <iframe id="youtube-embed" src="" title="YouTube video player" allowfullscreen></iframe>
+                            </div>
+                        </div>
+
+                        <div class="loader" id="loader">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2">Generating notes from video transcript...<br>
+                            <small class="text-muted">This may take up to a minute</small></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="notes-container d-none" id="notes-section">
+                    <h2 class="mb-3">Generated Notes</h2>
+                    
+                    <div class="action-buttons d-flex justify-content-between">
+                        <div>
+                            <button class="btn btn-outline-primary" id="download-btn">
+                                <i class="bi bi-download"></i> Download Notes
+                            </button>
+                        </div>
+                        <div>
+                            <a href="/quiz" class="btn btn-success" id="quiz-btn">
+                                <i class="bi bi-question-circle"></i> Create Quiz
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div id="notes-content" class="markdown-body"></div>
+                </div>
+            </div>
+        </div>
+        
+        <footer class="mt-5 text-center text-muted">
+            <p>&copy; 2025 YTNotes - Turn YouTube videos into comprehensive notes</p>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <script>
+        // Store video ID for later use
+        let currentVideoId = '';
+        
+        document.getElementById('youtube-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const youtubeUrl = document.getElementById('youtube-url').value.trim();
+            if (!youtubeUrl) return;
+            
+            // Show loader
+            document.getElementById('loader').style.display = 'block';
+            document.getElementById('notes-section').classList.add('d-none');
+            
+            try {
+                const response = await fetch('/api/extract', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ youtube_url: youtubeUrl }),
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Store video ID
+                    currentVideoId = data.video_id;
+                    
+                    // Set notes content
+                    document.getElementById('notes-content').innerHTML = marked.parse(data.notes);
+                    
+                    // Update video preview
+                    const embedUrl = `https://www.youtube.com/embed/${data.video_id}`;
+                    document.getElementById('youtube-embed').src = embedUrl;
+                    document.getElementById('video-preview').classList.remove('d-none');
+                    
+                    // Show notes section
+                    document.getElementById('notes-section').classList.remove('d-none');
+                    
+                    // Update session storage to share video ID with quiz page
+                    sessionStorage.setItem('current_video_id', data.video_id);
+                    
+                } else {
+                    alert(`Error: ${data.error}`);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to generate notes. Please try again.');
+            } finally {
+                document.getElementById('loader').style.display = 'none';
+            }
+        });
+        
+        document.getElementById('download-btn').addEventListener('click', function() {
+            if (currentVideoId) {
+                window.location.href = `/api/download/${currentVideoId}`;
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YTNotes - Quiz Generator</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <style>
+        body {
+            padding-top: 20px;
+            background-color: #f8f9fa;
+        }
+        .hero-section {
+            background-color: #343a40;
+            color: white;
+            padding: 2rem 0;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+        .quiz-container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        .loader {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+        .quiz-settings {
+            background-color: #e9ecef;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .question-card {
+            margin-bottom: 20px;
+            border-left: 5px solid #007bff;
+        }
+        .correct-answer {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+        .incorrect-answer {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+        .option-label {
+            width: 100%;
+            text-align: left;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ced4da;
+            margin-bottom: 5px;
+            cursor: pointer;
+        }
+        .option-label:hover {
+            background-color: #f8f9fa;
+        }
+        .results-summary {
+            background-color: #e9ecef;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            text-align: center;
+        }
+        .question-navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        #results-container {
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="hero-section text-center">
+            <h1><i class="bi bi-question-diamond-fill text-success"></i> YTNotes Quiz Generator</h1>
+            <p class="lead">Test your knowledge with generated quizzes from YouTube video notes</p>
+        </div>
+        
+        <div class="row">
+            <div class="col-lg-10 mx-auto">
+                <div class="quiz-container">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <a href="/" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Back to Notes
+                        </a>
+                    </div>
+                    
+                    <div id="quiz-setup" class="quiz-settings">
+                        <h3 class="mb-3">Quiz Settings</h3>
+                        <form id="quiz-form">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="quiz-type" class="form-label">Quiz Type</label>
+                                    <select class="form-select" id="quiz-type" required>
+                                        <option value="">Select a quiz type</option>
+                                        <option value="mcq">Multiple Choice Questions</option>
+                                        <option value="fill_blanks">Fill in the Blanks</option>
+                                        <option value="qa">Questions & Answers</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="num-questions" class="form-label">Number of Questions</label>
+                                    <input type="range" class="form-range" id="num-questions" min="5" max="20" value="10">
+                                    <div class="text-center" id="questions-value">10 Questions</div>
+                                </div>
+                            </div>
+                            <div class="text-center mt-3">
+                                <button type="submit" class="btn btn-primary" id="generate-quiz-btn">
+                                    <i class="bi bi-lightning-charge"></i> Generate Quiz
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <div class="loader" id="quiz-loader">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Generating quiz questions...<br>
+                        <small class="text-muted">This may take up to a minute</small></p>
+                    </div>
+                    
+                    <div id="quiz-container" style="display: none;">
+                        <h3 class="mb-4" id="quiz-title">Quiz Questions</h3>
+                        
+                        <div id="questions-container"></div>
+                        
+                        <div class="text-center mt-4">
+                            <button class="btn btn-success btn-lg" id="submit-quiz">
+                                <i class="bi bi-check-circle"></i> Submit Answers
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="results-container" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+        
+        <footer class="mt-5 text-center text-muted">
+            <p>&copy; 2025 YTNotes - Turn YouTube videos into comprehensive notes and quizzes</p>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Quiz state
+        let quizData = [];
+        let userAnswers = {};
+        let quizType = '';
+        
+        // Update range value display
+        document.getElementById('num-questions').addEventListener('input', function() {
+            document.getElementById('questions-value').textContent = this.value + ' Questions';
+        });
+        
+        // Generate quiz
+        document.getElementById('quiz-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const videoId = sessionStorage.getItem('current_video_id');
+            quizType = document.getElementById('quiz-type').value;
+            const numQuestions = document.getElementById('num-questions').value;
+            
+            if (!videoId) {
+                alert('No video selected! Please generate notes first.');
+                window.location.href = '/';
+                return;
+            }
+            
+            // Show loader
+            document.getElementById('quiz-loader').style.display = 'block';
+            document.getElementById('quiz-container').style.display = 'none';
+            document.getElementById('results-container').style.display = 'none';
+            
+            try {
+                const response = await fetch('/api/generate-quiz', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        video_id: videoId,
+                        quiz_type: quizType,
+                        num_questions: parseInt(numQuestions)
+                    }),
+                });
+                
+                const data = await response.json();
+                
+                if (response.error) {
+                    alert(`Error: ${data.error}`);
+                    return;
+                }
+                
+                // Store quiz data
+                quizData = data;
+                
+                // Reset user answers
+                userAnswers = {};
+                
+                // Render quiz
+                renderQuiz();
+                
+                // Show quiz container
+                document.getElementById('quiz-container').style.display = 'block';
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to generate quiz. Please try again.');
+            } finally {
+                document.getElementById('quiz-loader').style.display = 'none';
+            }
+        });
+        
+        // Render quiz based on type
+        function renderQuiz() {
+            const container = document.getElementById('questions-container');
+            container.innerHTML = '';
+            
+            let quizTitle = '';
+            switch(quizType) {
+                case 'mcq':
+                    quizTitle = 'Multiple Choice Questions';
+                    break;
+                case 'fill_blanks':
+                    quizTitle = 'Fill in the Blanks';
+                    break;
+                case 'qa':
+                    quizTitle = 'Questions & Answers';
+                    break;
+            }
+            
+            document.getElementById('quiz-title').textContent = quizTitle;
+            
+            quizData.forEach((question, index) => {
+                const questionNumber = index + 1;
+                const questionDiv = document.createElement('div');
+                questionDiv.className = 'card question-card mb-4';
+                questionDiv.setAttribute('data-question-id', index);
+                
+                let questionContent = '';
+                
+                switch(quizType) {
+                    case 'mcq':
+                        questionContent = `
+                            <div class="card-header bg-light">
+                                <strong>Question ${questionNumber}:</strong> ${question.question}
+                            </div>
+                            <div class="card-body">
+                                <div class="options-container">
+                                    ${question.options.map((option, optIndex) => `
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="radio" name="question${index}" 
+                                                id="q${index}_opt${optIndex}" value="${optIndex}"
+                                                onchange="saveAnswer(${index}, ${optIndex})">
+                                            <label class="option-label" for="q${index}_opt${optIndex}">
+                                                ${['A', 'B', 'C', 'D'][optIndex]}. ${option}
+                                            </label>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `;
+                        break;
+                        
+                    case 'fill_blanks':
+                        questionContent = `
+                            <div class="card-header bg-light">
+                                <strong>Question ${questionNumber}:</strong> Fill in the blank
+                            </div>
+                            <div class="card-body">
+                                <p>${question.question.replace('_____', '<span class="text-primary">_____</span>')}</p>
+                                <div class="mb-3">
+                                    <input type="text" class="form-control" id="answer${index}" 
+                                        placeholder="Your answer" onchange="saveTextAnswer(${index})">
+                                </div>
+                            </div>
+                        `;
+                        break;
+                        
+                    case 'qa':
+                        questionContent = `
+                            <div class="card-header bg-light">
+                                <strong>Question ${questionNumber}:</strong> ${question.question}
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <textarea class="form-control" id="answer${index}" rows="3" 
+                                        placeholder="Your answer" onchange="saveTextAnswer(${index})"></textarea>
+                                </div>
+                            </div>
+                        `;
+                        break;
+                }
+                
+                questionDiv.innerHTML = questionContent;
+                container.appendChild(questionDiv);
+            });
+        }
+        
+        // Save MCQ answer
+        function saveAnswer(questionIndex, answerIndex) {
+            userAnswers[questionIndex] = answerIndex;
+        }
+        
+        // Save text answer
+        function saveTextAnswer(questionIndex) {
+            const element = document.getElementById(`answer${questionIndex}`);
+            userAnswers[questionIndex] = element.value.trim();
+        }
+        
+        // Submit quiz
+        document.getElementById('submit-quiz').addEventListener('click', function() {
+            evaluateQuiz();
+        });
+        
+        // Evaluate quiz
+        function evaluateQuiz() {
+            const resultsContainer = document.getElementById('results-container');
+            resultsContainer.innerHTML = '';
+            
+            let correctCount = 0;
+            let totalQuestions = quizData.length;
+            
+            // Create results HTML
+            let resultsHtml = '<h3 class="mb-4">Quiz Results</h3>';
+            
+            quizData.forEach((question, index) => {
+                const userAnswer = userAnswers[index];
+                let isCorrect = false;
+                let correctAnswer = '';
+                let userAnswerDisplay = 'Not answered';
+                
+                switch(quizType) {
+                    case 'mcq':
+                        correctAnswer = question.options[question.correctAnswer];
+                        if (userAnswer === question.correctAnswer) {
+                            isCorrect = true;
+                            correctCount++;
+                        }
+                        if (userAnswer !== undefined) {
+                            userAnswerDisplay = question.options[userAnswer];
+                        }
+                        break;
+                        
+                    case 'fill_blanks':
+                        correctAnswer = question.answer;
+                        if (userAnswer && userAnswer.toLowerCase() === question.answer.toLowerCase()) {
+                            isCorrect = true;
+                            correctCount++;
+                        }
+                        userAnswerDisplay = userAnswer || 'Not answered';
+                        break;
+                        
+                    case 'qa':
+                        correctAnswer = question.answer;
+                        // For Q&A, we just show the correct answer without scoring
+                        userAnswerDisplay = userAnswer || 'Not answered';
+                        break;
+                }
+                
+                const questionCard = document.createElement('div');
+                questionCard.className = `card mb-4 ${isCorrect ? 'border-success' : quizType === 'qa' ? '' : 'border-danger'}`;
+                
+                let resultContent = `
+                    <div class="card-header ${isCorrect ? 'bg-success text-white' : quizType === 'qa' ? 'bg-light' : 'bg-danger text-white'}">
+                        <strong>Question ${index + 1}:</strong> 
+                        ${quizType === 'mcq' || quizType === 'qa' ? question.question : question.question.replace('_____', '<span class="text-primary">_____</span>')}
+                        ${quizType !== 'qa' ? `<span class="float-end">${isCorrect ? '<i class="bi bi-check-circle"></i> Correct' : '<i class="bi bi-x-circle"></i> Incorrect'}</span>` : ''}
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Your Answer:</strong></p>
+                                <div class="p-3 bg-light rounded">${userAnswerDisplay}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Correct Answer:</strong></p>
+                                <div class="p-3 bg-light rounded">${correctAnswer}</div>
+                            </div>
+                        </div>
+                    </div>
+                     `;
+                
+                questionCard.innerHTML = resultContent;
+                resultsContainer.appendChild(questionCard);
+            });
+            
+            // Add summary section for MCQ and Fill in Blanks
+            if (quizType !== 'qa') {
+                const percentage = Math.round((correctCount / totalQuestions) * 100);
+                let feedbackMessage = '';
+                
+                if (percentage >= 90) feedbackMessage = 'Excellent! You have mastered this content!';
+                else if (percentage >= 70) feedbackMessage = 'Good job! You understand most of the material.';
+                else if (percentage >= 50) feedbackMessage = 'Not bad. You might want to review some sections.';
+                else feedbackMessage = 'You should review the material again to improve your understanding.';
+                
+                const summaryDiv = document.createElement('div');
+                summaryDiv.className = 'results-summary';
+                summaryDiv.innerHTML = `
+                    <h4>Your Score: ${correctCount} out of ${totalQuestions}</h4>
+                    <div class="progress mt-3 mb-3" style="height: 25px;">
+                        <div class="progress-bar ${percentage >= 70 ? 'bg-success' : percentage >= 50 ? 'bg-warning' : 'bg-danger'}" 
+                            role="progressbar" style="width: ${percentage}%" 
+                            aria-valuenow="${percentage}" aria-valuemin="0" aria-valuemax="100">
+                            ${percentage}%
+                        </div>
+                    </div>
+                    <p class="mt-3">${feedbackMessage}</p>
+                    <button class="btn btn-primary mt-3" onclick="window.location.reload()">
+                        <i class="bi bi-arrow-repeat"></i> Create Another Quiz
+                    </button>
+                `;
+                resultsContainer.appendChild(summaryDiv);
+            } else {
+                // For Q&A, just add a "create another quiz" button
+                const summaryDiv = document.createElement('div');
+                summaryDiv.className = 'text-center mt-4';
+                summaryDiv.innerHTML = `
+                    <button class="btn btn-primary" onclick="window.location.reload()">
+                        <i class="bi bi-arrow-repeat"></i> Create Another Quiz
+                    </button>
+                `;
+                resultsContainer.appendChild(summaryDiv);
+            }
+            
+            // Hide quiz and show results
+            document.getElementById('quiz-container').style.display = 'none';
+            resultsContainer.style.display = 'block';
+            
+            // Scroll to top of results
+            resultsContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Check if we have a video ID in session storage
+        document.addEventListener('DOMContentLoaded', function() {
+            const videoId = sessionStorage.getItem('current_video_id');
+            if (!videoId) {
+                const warningDiv = document.createElement('div');
+                warningDiv.className = 'alert alert-warning';
+                warningDiv.innerHTML = `
+                    <i class="bi bi-exclamation-triangle"></i> 
+                    No video selected! Please <a href="/">generate notes</a> first.
+                `;
+                document.getElementById('quiz-setup').prepend(warningDiv);
+                document.getElementById('generate-quiz-btn').disabled = true;
+            }
+        });
+    </script>
+</body>
+</html>
