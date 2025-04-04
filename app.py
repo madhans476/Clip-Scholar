@@ -13,7 +13,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Hugging Face API settings
-HF_API_TOKEN = "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"
+HF_API_TOKEN = "your token"
 HF_API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
 
 # Cache for generated notes
