@@ -14,7 +14,7 @@ app = Flask(__name__)
 CORS(app)
 
 supadata = Supadata(api_key="")
-api_key = ""
+api_key = "Bearer "
 def run_mistral(user_message, model="mistral-large-latest"):
     client = Mistral(api_key=api_key)
     messages = [
