@@ -9,7 +9,11 @@ from mistralai import Mistral
 app = Flask(__name__)
 CORS(app)
 
+<<<<<<< HEAD
 api_key = "BHOYy25hmsTZ5hZrAObwW9UQRDjldiLI"
+=======
+api_key = "Bearer "
+>>>>>>> a22b6b7922352511f0ba090a3f5a74b9e36f4c5d
 def run_mistral(user_message, model="mistral-large-latest"):
     client = Mistral(api_key=api_key)
     messages = [
