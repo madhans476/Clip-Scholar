@@ -3,102 +3,474 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YTNotes - Generate Notes from YouTube Videos</title>
+    <title>Clip Scholar - Smart Learning from YouTube Videos</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/marked/marked.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
     <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3a0ca3;
+            --accent: #f72585;
+            --light: #f8f9fa;
+            --dark: #1a1a2e;
+            --success: #4cc9f0;
+            --warning: #f9c74f;
+        }
+        
         body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            color: var(--dark);
             padding-top: 20px;
-            background-color: #f8f9fa;
+            line-height: 1.6;
         }
+        
         .hero-section {
-            background-color: #343a40;
+            background: linear-gradient(135deg, var(--secondary) 0%, var(--primary) 100%);
             color: white;
-            padding: 3rem 0;
-            border-radius: 8px;
-            margin-bottom: 2rem;
+            padding: 3.5rem 0;
+            border-radius: 16px;
+            margin-bottom: 2.5rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
         }
+        
+        .hero-section::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+            transform: rotate(30deg);
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 2;
+        }
+        
+        .hero-title {
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        
+        .hero-title i {
+            background: var(--accent);
+            padding: 10px;
+            border-radius: 12px;
+            margin-right: 10px;
+        }
+        
+        .lead {
+            font-weight: 300;
+            font-size: 1.25rem;
+            opacity: 0.9;
+        }
+        
+        .feature-badge {
+            background-color: rgba(255,255,255,0.2);
+            border-radius: 20px;
+            padding: 5px 15px;
+            font-size: 0.85rem;
+            margin: 0 5px;
+            display: inline-block;
+            backdrop-filter: blur(5px);
+        }
+        
+        .card {
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .card-body {
+            padding: 2rem;
+        }
+        
+        .input-group {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .input-group-text {
+            background-color: white;
+            border: none;
+            color: var(--primary);
+        }
+        
+        .form-control {
+            border: none;
+            padding: 12px;
+            font-size: 1rem;
+        }
+        
+        .form-control:focus {
+            box-shadow: none;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            border: none;
+            box-shadow: 0 5px 15px rgba(67, 97, 238, 0.3);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(67, 97, 238, 0.4);
+            background: linear-gradient(135deg, var(--secondary) 0%, var(--primary) 100%);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, var(--success) 0%, #56cfe1 100%);
+            border: none;
+            box-shadow: 0 5px 15px rgba(76, 201, 240, 0.3);
+        }
+        
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(76, 201, 240, 0.4);
+        }
+        
+        .btn-outline-primary {
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+        
+        .btn-outline-primary:hover {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        #video-preview {
+            max-width: 100%;
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        
         .notes-container {
             background-color: white;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
+        
         #notes-content {
             min-height: 200px;
+            line-height: 1.8;
+            font-size: 1.05rem;
         }
+        
         .loader {
             display: none;
             text-align: center;
-            margin: 20px 0;
+            margin: 30px 0;
         }
+        
         .spinner-border {
-            width: 3rem;
-            height: 3rem;
+            width: 3.5rem;
+            height: 3.5rem;
+            color: var(--primary);
         }
+        
         .action-buttons {
-            margin: 20px 0;
+            margin: 25px 0;
         }
-        #video-preview {
-            max-width: 100%;
-            border-radius: 8px;
+        
+        .feature-card {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 25px;
+            border-radius: 16px;
+            background: white;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+        }
+        
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            color: var(--primary);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .theme-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            cursor: pointer;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+        
+        .theme-toggle:hover {
+            transform: rotate(30deg);
+        }
+        
+        footer {
+            padding: 30px 0;
+            margin-top: 60px;
+        }
+        
+        /* Recent videos section */
+        .recent-videos {
+            margin-top: 3rem;
+        }
+        
+        .video-card {
+            border-radius: 12px;
             overflow: hidden;
-            margin-bottom: 1rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+        
+        .video-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .video-thumbnail {
+            position: relative;
+            height: 160px;
+            background-color: #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #adb5bd;
+        }
+        
+        .video-info {
+            padding: 15px;
+        }
+        
+        .video-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+            line-height: 1.4;
+            height: 2.8em;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+        
+        .video-meta {
+            font-size: 0.8rem;
+            color: #6c757d;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        /* Stats counters */
+        .stats-container {
+            background: linear-gradient(135deg, #ffffff 0%, #f1f3f5 100%);
+            border-radius: 16px;
+            padding: 30px;
+            margin-top: 3rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 20px 10px;
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .stat-label {
+            font-size: 1rem;
+            color: #495057;
+        }
+        
+        /* Animated elements */
+        .animate-in {
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            .hero-section {
+                padding: 2rem 0;
+                text-align: center;
+            }
+            
+            .feature-badge {
+                margin-bottom: 5px;
+            }
+            
+            .card-body {
+                padding: 1.5rem;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="hero-section text-center">
-            <h1><i class="bi bi-youtube text-danger"></i> YTNotes</h1>
-            <p class="lead">Generate comprehensive notes from any YouTube video</p>
+        <div class="hero-section">
+            <div class="hero-content text-center">
+                <h1 class="hero-title mb-3 animate__animated animate__fadeInDown">
+                    <i class="bi bi-play-circle-fill"></i> Clip Scholar
+                </h1>
+                <p class="lead mb-4 animate__animated animate__fadeInUp">Transform YouTube videos into comprehensive study materials</p>
+                <div class="mt-4 animate__animated animate__fadeIn animate__delay-1s">
+                    <span class="feature-badge"><i class="bi bi-file-earmark-text"></i> Smart Notes</span>
+                    <span class="feature-badge"><i class="bi bi-question-circle"></i> AI Quizzes</span>
+                    <span class="feature-badge"><i class="bi bi-card-checklist"></i> Flashcards</span>
+                    <span class="feature-badge"><i class="bi bi-bookmark-star"></i> Study Guides</span>
+                </div>
+            </div>
         </div>
         
         <div class="row">
             <div class="col-lg-8 mx-auto">
-                <div class="card mb-4">
+                <div class="card mb-4 animate-in" style="animation-delay: 0.2s;">
                     <div class="card-body">
                         <form id="youtube-form">
-                            <div class="mb-3">
-                                <label for="youtube-url" class="form-label">YouTube Video URL</label>
+                            <div class="mb-4">
+                                <label for="youtube-url" class="form-label fw-medium">Enter YouTube Video URL</label>
                                 <div class="input-group">
-                                    <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
+                                    <span class="input-group-text"><i class="bi bi-youtube text-danger"></i></span>
                                     <input type="text" class="form-control" id="youtube-url" 
                                         placeholder="https://www.youtube.com/watch?v=..." required>
                                     <button type="submit" class="btn btn-primary" id="generate-btn">
-                                        <i class="bi bi-magic"></i> Generate Notes
+                                        <i class="bi bi-magic"></i> Generate
                                     </button>
+                                </div>
+                                <div class="form-text mt-2">Paste any educational YouTube video link to generate study materials</div>
+                            </div>
+                            
+                            <div class="row mt-4">
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="include-summary" checked>
+                                        <label class="form-check-label" for="include-summary">
+                                            Include Summary
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="include-key-points" checked>
+                                        <label class="form-check-label" for="include-key-points">
+                                            Include Key Points
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="include-definitions">
+                                        <label class="form-check-label" for="include-definitions">
+                                            Include Definitions
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="include-examples">
+                                        <label class="form-check-label" for="include-examples">
+                                            Include Examples
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
                         </form>
                         
-                        <div id="video-preview" class="d-none">
+                        <div id="video-preview" class="d-none mt-4">
                             <div class="ratio ratio-16x9">
                                 <iframe id="youtube-embed" src="" title="YouTube video player" allowfullscreen></iframe>
                             </div>
                         </div>
 
                         <div class="loader" id="loader">
-                            <div class="spinner-border text-primary" role="status">
+                            <div class="spinner-border" role="status">
                                 <span class="visually-hidden">Loading...</span>
                             </div>
-                            <p class="mt-2">Generating notes from video transcript...<br>
-                            <small class="text-muted">This may take up to a minute</small></p>
+                            <p class="mt-3">Processing video content...<br>
+                            <small class="text-muted">This may take up to a minute depending on video length</small></p>
                         </div>
                     </div>
                 </div>
 
                 <div class="notes-container d-none" id="notes-section">
-                    <h2 class="mb-3">Generated Notes</h2>
+                    <h2 class="mb-4 fw-bold">Generated Study Materials</h2>
                     
-                    <div class="action-buttons d-flex justify-content-between">
-                        <div>
+                    <div class="action-buttons d-flex flex-wrap gap-2 justify-content-between align-items-center">
+                        <div class="d-flex gap-2">
                             <button class="btn btn-outline-primary" id="download-btn">
-                                <i class="bi bi-download"></i> Download Notes
+                                <i class="bi bi-download"></i> Download
+                            </button>
+                            <button class="btn btn-outline-primary" id="copy-btn">
+                                <i class="bi bi-clipboard"></i> Copy
+                            </button>
+                            <button class="btn btn-outline-primary" id="print-btn">
+                                <i class="bi bi-printer"></i> Print
                             </button>
                         </div>
-                        <div>
+                        <div class="d-flex gap-2">
+                            <a href="/flashcards" class="btn btn-outline-primary" id="flashcards-btn">
+                                <i class="bi bi-card-list"></i> Flashcards
+                            </a>
                             <a href="/quiz" class="btn btn-success" id="quiz-btn">
                                 <i class="bi bi-question-circle"></i> Create Quiz
                             </a>
@@ -107,14 +479,162 @@
                     
                     <hr>
                     
-                    <div id="notes-content" class="markdown-body"></div>
+                    <nav>
+                        <div class="nav nav-tabs" id="nav-tab" role="tablist">
+                            <button class="nav-link active" id="nav-notes-tab" data-bs-toggle="tab" data-bs-target="#nav-notes" type="button" role="tab" aria-controls="nav-notes" aria-selected="true">Notes</button>
+                            <button class="nav-link" id="nav-summary-tab" data-bs-toggle="tab" data-bs-target="#nav-summary" type="button" role="tab" aria-controls="nav-summary" aria-selected="false">Summary</button>
+                            <button class="nav-link" id="nav-mindmap-tab" data-bs-toggle="tab" data-bs-target="#nav-mindmap" type="button" role="tab" aria-controls="nav-mindmap" aria-selected="false">Mind Map</button>
+                        </div>
+                    </nav>
+                    <div class="tab-content mt-4" id="nav-tabContent">
+                        <div class="tab-pane fade show active" id="nav-notes" role="tabpanel" aria-labelledby="nav-notes-tab">
+                            <div id="notes-content" class="markdown-body"></div>
+                        </div>
+                        <div class="tab-pane fade" id="nav-summary" role="tabpanel" aria-labelledby="nav-summary-tab">
+                            <div id="summary-content" class="markdown-body">
+                                <p class="text-muted">Summary will appear here after generation</p>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="nav-mindmap" role="tabpanel" aria-labelledby="nav-mindmap-tab">
+                            <div id="mindmap-content" class="text-center">
+                                <p class="text-muted">Mind map will appear here after generation</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recently processed videos -->
+                <div class="recent-videos animate-in" style="animation-delay: 0.4s;">
+                    <h3 class="mb-4">Recently Processed Videos</h3>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="video-card">
+                                <div class="video-thumbnail">
+                                    <i class="bi bi-play-circle fs-1"></i>
+                                </div>
+                                <div class="video-info">
+                                    <div class="video-title">Introduction to Machine Learning Algorithms</div>
+                                    <div class="video-meta">
+                                        <span>10:25</span>
+                                        <span>2 days ago</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="video-card">
+                                <div class="video-thumbnail">
+                                    <i class="bi bi-play-circle fs-1"></i>
+                                </div>
+                                <div class="video-info">
+                                    <div class="video-title">History of Ancient Rome: The Republic Era</div>
+                                    <div class="video-meta">
+                                        <span>15:42</span>
+                                        <span>3 days ago</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="video-card">
+                                <div class="video-thumbnail">
+                                    <i class="bi bi-play-circle fs-1"></i>
+                                </div>
+                                <div class="video-info">
+                                    <div class="video-title">Python Programming for Beginners: Functions and Modules</div>
+                                    <div class="video-meta">
+                                        <span>18:36</span>
+                                        <span>4 days ago</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                
+                <!-- Feature highlights -->
+                <div class="mt-5 animate-in" style="animation-delay: 0.8s;">
+                    <h3 class="text-center mb-4">Features</h3>
+                    <div class="row g-4">
+                        <div class="col-md-4">
+                            <div class="feature-card">
+                                <div>
+                                    <div class="feature-icon">
+                                        <i class="bi bi-journal-text"></i>
+                                    </div>
+                                    <h4>Smart Notes</h4>
+                                    <p>AI-generated structured notes with key concepts, definitions, and examples.</p>
+                                </div>
+                                <a href="#" class="btn btn-sm btn-outline-primary mt-3">Learn more</a>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="feature-card">
+                                <div>
+                                    <div class="feature-icon">
+                                        <i class="bi bi-question-diamond"></i>
+                                    </div>
+                                    <h4>Interactive Quizzes</h4>
+                                    <p>Test your knowledge with automatically generated quizzes in multiple formats.</p>
+                                </div>
+                                <a href="#" class="btn btn-sm btn-outline-primary mt-3">Learn more</a>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="feature-card">
+                                <div>
+                                    <div class="feature-icon">
+                                        <i class="bi bi-diagram-3"></i>
+                                    </div>
+                                    <h4>Mind Maps</h4>
+                                    <p>Visualize connections between concepts with auto-generated mind maps.</p>
+                                </div>
+                                <a href="#" class="btn btn-sm btn-outline-primary mt-3">Learn more</a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
         
         <footer class="mt-5 text-center text-muted">
-            <p>&copy; 2025 YTNotes - Turn YouTube videos into comprehensive notes</p>
+            <div class="row">
+                <div class="col-md-4">
+                    <h5>Clip Scholar</h5>
+                    <p class="small">Transform educational videos into comprehensive study materials.</p>
+                </div>
+                <div class="col-md-4">
+                    <h5>Quick Links</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="#" class="text-decoration-none text-muted">Home</a></li>
+                        <li><a href="#" class="text-decoration-none text-muted">Features</a></li>
+                        <li><a href="#" class="text-decoration-none text-muted">Pricing</a></li>
+                        <li><a href="#" class="text-decoration-none text-muted">Help Center</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h5>Contact</h5>
+                    <p class="small">
+                        <a href="mailto:info@clipscholar.com" class="text-decoration-none text-muted">info@clipscholar.com</a>
+                    </p>
+                    <div class="d-flex justify-content-center gap-3 mt-2">
+                        <a href="#" class="text-muted fs-5"><i class="bi bi-twitter"></i></a>
+                        <a href="#" class="text-muted fs-5"><i class="bi bi-facebook"></i></a>
+                        <a href="#" class="text-muted fs-5"><i class="bi bi-instagram"></i></a>
+                        <a href="#" class="text-muted fs-5"><i class="bi bi-linkedin"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4">
+                <p>&copy; 2025 Clip Scholar - All Rights Reserved</p>
+            </div>
         </footer>
+    </div>
+    
+    <!-- Theme toggle button -->
+    <div class="theme-toggle" id="theme-toggle">
+        <i class="bi bi-moon-fill"></i>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
@@ -124,11 +644,34 @@
         // Store video ID for later use
         let currentVideoId = '';
         
+        // Animate elements on scroll
+        const animateElements = () => {
+            const elements = document.querySelectorAll('.animate-in');
+            elements.forEach(element => {
+                const position = element.getBoundingClientRect().top;
+                const windowHeight = window.innerHeight;
+                if (position < windowHeight - 50) {
+                    element.style.opacity = 1;
+                    element.style.transform = 'translateY(0)';
+                }
+            });
+        };
+        
+        // Initialize animations
+        window.addEventListener('scroll', animateElements);
+        window.addEventListener('load', animateElements);
+        
         document.getElementById('youtube-form').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const youtubeUrl = document.getElementById('youtube-url').value.trim();
             if (!youtubeUrl) return;
+            
+            // Get option selections
+            const includeSummary = document.getElementById('include-summary').checked;
+            const includeKeyPoints = document.getElementById('include-key-points').checked;
+            const includeDefinitions = document.getElementById('include-definitions').checked;
+            const includeExamples = document.getElementById('include-examples').checked;
             
             // Show loader
             document.getElementById('loader').style.display = 'block';
@@ -140,7 +683,13 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ youtube_url: youtubeUrl }),
+                    body: JSON.stringify({ 
+                        youtube_url: youtubeUrl,
+                        include_summary: includeSummary,
+                        include_key_points: includeKeyPoints,
+                        include_definitions: includeDefinitions,
+                        include_examples: includeExamples
+                    }),
                 });
                 
                 const data = await response.json();
@@ -151,6 +700,11 @@
                     
                     // Set notes content
                     document.getElementById('notes-content').innerHTML = marked.parse(data.notes);
+                    
+                    // Set summary content if available
+                    if (data.summary) {
+                        document.getElementById('summary-content').innerHTML = marked.parse(data.summary);
+                    }
                     
                     // Update video preview
                     const embedUrl = `https://www.youtube.com/embed/${data.video_id}`;
@@ -163,6 +717,9 @@
                     // Update session storage to share video ID with quiz page
                     sessionStorage.setItem('current_video_id', data.video_id);
                     
+                    // Scroll to notes section
+                    document.getElementById('notes-section').scrollIntoView({ behavior: 'smooth' });
+                    
                 } else {
                     alert(`Error: ${data.error}`);
                 }
@@ -174,10 +731,134 @@
             }
         });
         
+        // Download button functionality
         document.getElementById('download-btn').addEventListener('click', function() {
             if (currentVideoId) {
                 window.location.href = `/api/download/${currentVideoId}`;
             }
+        });
+        
+        // Copy to clipboard functionality
+        document.getElementById('copy-btn').addEventListener('click', function() {
+            const notesContent = document.getElementById('notes-content').innerText;
+            navigator.clipboard.writeText(notesContent).then(function() {
+                // Alert the user that the text was copied
+                const copyBtn = document.getElementById('copy-btn');
+                const originalText = copyBtn.innerHTML;
+                copyBtn.innerHTML = '<i class="bi bi-check-circle"></i> Copied!';
+                setTimeout(function() {
+                    copyBtn.innerHTML = originalText;
+                }, 2000);
+            });
+        });
+        
+        // Print functionality
+        document.getElementById('print-btn').addEventListener('click', function() {
+            const printContents = document.getElementById('notes-content').innerHTML;
+            const originalContents = document.body.innerHTML;
+            
+            // Create a print-friendly version
+            document.body.innerHTML = `
+                <div style="padding: 20px;">
+                    <h1 style="text-align: center;">Clip Scholar Notes</h1>
+                    <hr>
+                    ${printContents}
+                </div>
+            `;
+            
+            window.print();
+            
+            // Restore original contents
+            document.body.innerHTML = originalContents;
+            
+            // Reattach event listeners
+            attachEventListeners();
+        });
+        
+        // Toggle dark/light theme
+        document.getElementById('theme-toggle').addEventListener('click', function() {
+            const body = document.body;
+            const icon = this.querySelector('i');
+            
+            if (icon.classList.contains('bi-moon-fill')) {
+                // Switch to dark theme
+                document.documentElement.style.setProperty('--light', '#1a1a2e');
+                document.documentElement.style.setProperty('--dark', '#f8f9fa');
+                body.style.background = 'linear-gradient(135deg, #0f0f17 0%, #1a1a2e 100%)';
+                body.style.color = '#f8f9fa';
+                icon.classList.remove('bi-moon-fill');
+                icon.classList.add('bi-sun-fill');
+                
+                // Update card backgrounds
+                document.querySelectorAll('.card, .notes-container, .feature-card, .stats-container').forEach(el => {
+                    el.style.background = '#252547';
+                    el.style.color = '#f8f9fa';
+                });
+                
+                // Store theme preference
+                localStorage.setItem('theme', 'dark');
+            } else {
+                // Switch to light theme
+                document.documentElement.style.setProperty('--light', '#f8f9fa');
+                document.documentElement.style.setProperty('--dark', '#1a1a2e');
+                body.style.background = 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)';
+                body.style.color = '#1a1a2e';
+                icon.classList.remove('bi-sun-fill');
+                icon.classList.add('bi-moon-fill');
+                
+                // Update card backgrounds
+                document.querySelectorAll('.card, .notes-container, .feature-card, .stats-container').forEach(el => {
+                    el.style.background = 'white';
+                    el.style.color = '#1a1a2e';
+                });
+                
+                // Store theme preference
+                localStorage.setItem('theme', 'light');
+            }
+        });
+        
+        // Function to attach event listeners (used after print)
+        function attachEventListeners() {
+            document.getElementById('youtube-form').addEventListener('submit', async function(e) {
+                // Form submission code (same as above)
+            });
+            
+            document.getElementById('download-btn').addEventListener('click', function() {
+                if (currentVideoId) {
+                    window.location.href = `/api/download/${currentVideoId}`;
+                }
+            });
+            
+            document.getElementById('copy-btn').addEventListener('click', function() {
+                // Copy code (same as above)
+            });
+            
+            document.getElementById('print-btn').addEventListener('click', function() {
+                // Print code (same as above)
+            });
+            
+            document.getElementById('theme-toggle').addEventListener('click', function() {
+                // Theme toggle code (same as above)
+            });
+        }
+        
+        // Check for saved theme preference
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') {
+                document.getElementById('theme-toggle').click();
+            }
+            
+            // Initialize popovers and tooltips
+            const popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
+            const popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
+                return new bootstrap.Popover(popoverTriggerEl);
+            });
+            
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
         });
     </script>
 </body>

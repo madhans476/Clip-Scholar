@@ -8,13 +8,22 @@ import re
 import random
 from youtube_transcript_api import YouTubeTranscriptApi
 import uuid
+from mistralai import Mistral
 
 app = Flask(__name__)
 CORS(app)
 
-# Hugging Face API settings
-HF_API_TOKEN = "your token"
-HF_API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
+api_key = "your token"
+def run_mistral(user_message, model="mistral-large-latest"):
+    client = Mistral(api_key=api_key)
+    messages = [
+        {"role":"user", "content":user_message}
+    ]
+    chat_response = client.chat.complete(
+        model=model,
+        messages=messages
+    )
+    return (chat_response.choices[0].message.content)
 
 # Cache for generated notes
 notes_cache = {}
@@ -44,42 +53,27 @@ def get_transcript(video_id):
 
 def generate_notes(transcript_text):
     """Generate notes from transcript using Hugging Face API."""
-    headers = {"Authorization": f"Bearer {HF_API_TOKEN}"}
     
-    prompt = f"""<s>[INST] I have a YouTube video transcript. Please create comprehensive, structured notes that:
+    prompt = f"""I have a YouTube video transcript of an education related video. Please create comprehensive, structured notes that:
     1. Identify and organize the main topics and subtopics with clear headings
-    2. Include key points, definitions, examples, and explanations
-    3. Format the notes in proper markdown with headings, bullet points, and emphasis where appropriate
-    4. Add helpful context where needed
+    2. Incorporate relevant notes, context, or text from external sources to enrich the educational content
+    3. Include key points, definitions, examples, and detailed explanations of the content
+    4. Format the notes in proper markdown with headings, bullet points, and emphasis where appropriate
+    5. Add relevant citations to academic papers, books, or authoritative sources where appropriate using APA format [Author, Year]
+    6. Include a "References" section at the end with the full citations
     
     Transcript:
     {transcript_text}
-    [/INST]</s>
     """
     
-    payload = {
-        "inputs": prompt,
-        "parameters": {
-            "max_new_tokens": 2048,
-            "temperature": 0.3,
-            "top_p": 0.9,
-            "return_full_text": False
-        }
-    }
-    
-    response = requests.post(HF_API_URL, headers=headers, json=payload)
-    
-    if response.status_code == 200:
-        return response.json()[0]["generated_text"]
-    else:
-        return f"Error generating notes: {response.status_code}, {response.text}"
+    return run_mistral(prompt)
 
 def generate_quiz(notes, quiz_type, num_questions):
     """Generate quiz based on notes content."""
-    headers = {"Authorization": f"Bearer {HF_API_TOKEN}"}
+    
     
     prompt_templates = {
-        "mcq": f"""<s>[INST] Based on the following notes, generate {num_questions} multiple-choice questions (MCQs).
+        "mcq": f"""Based on only the main topic of the following notes, generate {num_questions} multiple-choice questions (MCQs).
         For each question:
         1. Create a clear question about an important concept
         2. Provide 4 options (A, B, C, D)
@@ -87,58 +81,40 @@ def generate_quiz(notes, quiz_type, num_questions):
         4. Format as a JSON array of objects with keys: "question", "options" (array), "correctAnswer" (index)
         
         Notes:
-        {notes}
-        [/INST]</s>""",
+        {notes}""",
         
-        "fill_blanks": f"""<s>[INST] Based on the following notes, generate {num_questions} fill-in-the-blank questions.
+        "fill_blanks": f"""Based on only the main topic of the following notes, generate {num_questions} fill-in-the-blank questions.
         For each question:
         1. Create a sentence with an important term or concept replaced by a blank
         2. Provide the correct answer
         3. Format as a JSON array of objects with keys: "question", "answer"
         
         Notes:
-        {notes}
-        [/INST]</s>""",
+        {notes}""",
         
-        "qa": f"""<s>[INST] Based on the following notes, generate {num_questions} question and answer pairs.
+        "qa": f"""Based on only the main topic of the following notes, generate {num_questions} question and answer pairs.
         For each pair:
         1. Create a detailed question about an important concept
         2. Provide a comprehensive answer
         3. Format as a JSON array of objects with keys: "question", "answer"
         
         Notes:
-        {notes}
-        [/INST]</s>"""
+        {notes}"""
     }
     
     prompt = prompt_templates.get(quiz_type.lower())
     
-    payload = {
-        "inputs": prompt,
-        "parameters": {
-            "max_new_tokens": 2048,
-            "temperature": 0.4,
-            "top_p": 0.9,
-            "return_full_text": False
-        }
-    }
+    response = run_mistral(prompt)
+    try:
+        # Find JSON-like content between square brackets
+        json_match = re.search(r'\[\s*{.+}\s*\]', response, re.DOTALL)
+        if json_match:
+            return json.loads(json_match.group(0))
+        else:
+            return {"error": "Could not extract quiz data from generated response"}
+    except json.JSONDecodeError:
+        return {"error": "Invalid JSON format in generated quiz", "raw": response}
     
-    response = requests.post(HF_API_URL, headers=headers, json=payload)
-    
-    if response.status_code == 200:
-        generated_text = response.json()[0]["generated_text"]
-        # Try to extract JSON object if present
-        try:
-            # Find JSON-like content between square brackets
-            json_match = re.search(r'\[\s*{.+}\s*\]', generated_text, re.DOTALL)
-            if json_match:
-                return json.loads(json_match.group(0))
-            else:
-                return {"error": "Could not extract quiz data from generated response"}
-        except json.JSONDecodeError:
-            return {"error": "Invalid JSON format in generated quiz", "raw": generated_text}
-    else:
-        return {"error": f"Error generating quiz: {response.status_code}"}
 
 @app.route('/')
 def index():
