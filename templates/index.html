@@ -400,40 +400,6 @@
                                 <div class="form-text mt-2">Paste any educational YouTube video link to generate study materials</div>
                             </div>
                             
-                            <div class="row mt-4">
-                                <div class="col-md-6">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="include-summary" checked>
-                                        <label class="form-check-label" for="include-summary">
-                                            Include Summary
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="include-key-points" checked>
-                                        <label class="form-check-label" for="include-key-points">
-                                            Include Key Points
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="include-definitions">
-                                        <label class="form-check-label" for="include-definitions">
-                                            Include Definitions
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="include-examples">
-                                        <label class="form-check-label" for="include-examples">
-                                            Include Examples
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
                         </form>
                         
                         <div id="video-preview" class="d-none mt-4">
@@ -553,6 +519,7 @@
                 </div>
                 
                 
+                
                 <!-- Feature highlights -->
                 <div class="mt-5 animate-in" style="animation-delay: 0.8s;">
                     <h3 class="text-center mb-4">Features</h3>
@@ -667,11 +634,6 @@
             const youtubeUrl = document.getElementById('youtube-url').value.trim();
             if (!youtubeUrl) return;
             
-            // Get option selections
-            const includeSummary = document.getElementById('include-summary').checked;
-            const includeKeyPoints = document.getElementById('include-key-points').checked;
-            const includeDefinitions = document.getElementById('include-definitions').checked;
-            const includeExamples = document.getElementById('include-examples').checked;
             
             // Show loader
             document.getElementById('loader').style.display = 'block';
@@ -685,10 +647,6 @@
                     },
                     body: JSON.stringify({ 
                         youtube_url: youtubeUrl,
-                        include_summary: includeSummary,
-                        include_key_points: includeKeyPoints,
-                        include_definitions: includeDefinitions,
-                        include_examples: includeExamples
                     }),
                 });
                 
@@ -701,10 +659,6 @@
                     // Set notes content
                     document.getElementById('notes-content').innerHTML = marked.parse(data.notes);
                     
-                    // Set summary content if available
-                    if (data.summary) {
-                        document.getElementById('summary-content').innerHTML = marked.parse(data.summary);
-                    }
                     
                     // Update video preview
                     const embedUrl = `https://www.youtube.com/embed/${data.video_id}`;

@@ -1,19 +1,15 @@
 from flask import Flask, request, jsonify, render_template, send_file
 from flask_cors import CORS
-import requests
 import json
-import os
 import io
 import re
-import random
 from youtube_transcript_api import YouTubeTranscriptApi
-import uuid
 from mistralai import Mistral
 
 app = Flask(__name__)
 CORS(app)
 
-api_key = "your token"
+api_key = "BHOYy25hmsTZ5hZrAObwW9UQRDjldiLI"
 def run_mistral(user_message, model="mistral-large-latest"):
     client = Mistral(api_key=api_key)
     messages = [
@@ -27,6 +23,8 @@ def run_mistral(user_message, model="mistral-large-latest"):
 
 # Cache for generated notes
 notes_cache = {}
+# Cache for fact checks
+fact_check_cache = {}
 
 def extract_video_id(youtube_url):
     """Extract the video ID from a YouTube URL."""
@@ -41,6 +39,15 @@ def extract_video_id(youtube_url):
         if match:
             return match.group(1)
     return None
+
+def get_transcript(video_id):
+    """Get transcript from YouTube video ID."""
+    try:
+        transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
+        transcript_text = ' '.join([item['text'] for item in transcript_list])
+        return transcript_text
+    except Exception as e:
+        return str(e)
 
 def get_transcript(video_id):
     """Get transcript from YouTube video ID."""
@@ -68,9 +75,9 @@ def generate_notes(transcript_text):
     
     return run_mistral(prompt)
 
+
 def generate_quiz(notes, quiz_type, num_questions):
     """Generate quiz based on notes content."""
-    
     
     prompt_templates = {
         "mcq": f"""Based on only the main topic of the following notes, generate {num_questions} multiple-choice questions (MCQs).
@@ -114,7 +121,7 @@ def generate_quiz(notes, quiz_type, num_questions):
             return {"error": "Could not extract quiz data from generated response"}
     except json.JSONDecodeError:
         return {"error": "Invalid JSON format in generated quiz", "raw": response}
-    
+
 
 @app.route('/')
 def index():
@@ -136,22 +143,30 @@ def extract_notes():
     if not video_id:
         return jsonify({"error": "Invalid YouTube URL"}), 400
     
+    # Create cache key that includes style and citations preference
+    cache_key = f"{video_id}"
+    
     # Check cache
-    if video_id in notes_cache:
-        return jsonify({"notes": notes_cache[video_id], "video_id": video_id})
+    if cache_key in notes_cache:
+        return jsonify({
+            "notes": notes_cache[cache_key]["content"],
+            "video_id": video_id,
+        })
     
     transcript = get_transcript(video_id)
-    if transcript.startswith("Error"):
-        return jsonify({"error": transcript}), 400
     
     notes = generate_notes(transcript)
     
+
+    
     # Store in cache
-    notes_cache[video_id] = notes
+    notes_cache[cache_key] = {
+        "content": notes,
+    }
     
     return jsonify({
         "notes": notes,
-        "video_id": video_id
+        "video_id": video_id,
     })
 
 @app.route('/api/generate-quiz', methods=['POST'])
@@ -164,22 +179,29 @@ def create_quiz():
     if not video_id or not quiz_type:
         return jsonify({"error": "Missing parameters"}), 400
     
-    if video_id not in notes_cache:
+    # Create cache key that includes style and citations preference
+    cache_key = f"{video_id}"
+    
+    if cache_key not in notes_cache:
         return jsonify({"error": "Notes not found. Please generate notes first."}), 404
     
-    quiz_data = generate_quiz(notes_cache[video_id], quiz_type, num_questions)
-    
+    quiz_data = generate_quiz(notes_cache[cache_key]["content"], quiz_type, num_questions)
+
     return jsonify(quiz_data)
 
 @app.route('/api/download/<video_id>')
 def download_notes(video_id):
-    if video_id not in notes_cache:
+    
+    cache_key = f"{video_id}"
+    
+    if cache_key not in notes_cache:
         return jsonify({"error": "Notes not found"}), 404
     
-    notes_content = notes_cache[video_id]
+    notes_content = notes_cache[cache_key]["content"]
     buffer = io.BytesIO()
     buffer.write(notes_content.encode('utf-8'))
     buffer.seek(0)
+    
     
     return send_file(
         buffer,
