@@ -1330,6 +1330,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (document.querySelector('.quiz-type-option')) {
         document.querySelector('.quiz-type-option').click();
     }
+
+    // When leaving the quiz page, store that we're in quiz mode
+    sessionStorage.setItem('coming_from_quiz', 'true');
 });
 
 </script>

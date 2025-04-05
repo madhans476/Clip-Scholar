@@ -5,6 +5,9 @@ import io
 import re
 from youtube_transcript_api import YouTubeTranscriptApi
 from mistralai import Mistral
+from datetime import datetime
+import requests
+from bs4 import BeautifulSoup
 
 app = Flask(__name__)
 CORS(app)
@@ -131,6 +134,8 @@ def index():
 def quiz_page():
     return render_template('quiz.html')
 
+recently_processed = []
+
 @app.route('/api/extract', methods=['POST'])
 def extract_notes():
     data = request.json
@@ -145,12 +150,17 @@ def extract_notes():
     
     # Create cache key that includes style and citations preference
     cache_key = f"{video_id}"
+
+    video_title = get_video_title(video_id)
     
     # Check cache
     if cache_key in notes_cache:
+        update_recently_processed(video_id, video_title)
         return jsonify({
             "notes": notes_cache[cache_key]["content"],
             "video_id": video_id,
+            "video_title": video_title,
+            "recently_processed": recently_processed[:3]
         })
     
     transcript = get_transcript(video_id)
@@ -163,11 +173,69 @@ def extract_notes():
     notes_cache[cache_key] = {
         "content": notes,
     }
+
+    update_recently_processed(video_id, video_title)
     
     return jsonify({
         "notes": notes,
         "video_id": video_id,
+        "video_title": video_title,
+        "recently_processed": recently_processed[:3]
     })
+
+def get_video_title(video_id):
+    try:
+        url = f"https://www.youtube.com/watch?v={video_id}"
+        response = requests.get(url)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        title = soup.find('title').text.replace(' - YouTube', '')
+        return title
+    except Exception:
+        return f"Video {video_id}"
+
+# Function to update recently processed list
+def update_recently_processed(video_id, title):
+    # Check if video already in list
+    for video in recently_processed:
+        if video['id'] == video_id:
+            # Move to top of list (most recent)
+            recently_processed.remove(video)
+            recently_processed.insert(0, {
+                'id': video_id, 
+                'title': title,
+                'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            })
+            return
+
+    # Add new video to the top of the list
+    recently_processed.insert(0, {
+        'id': video_id, 
+        'title': title,
+        'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    })
+    
+    # Keep only the most recent 10 videos
+    if len(recently_processed) > 10:
+        recently_processed.pop()
+
+# Add a new API endpoint to get recently processed videos
+@app.route('/api/recent-videos', methods=['GET'])
+def get_recent_videos():
+    return jsonify(recently_processed[:5])  # Return top 5 recent videos
+
+
+@app.route('/api/notes/<video_id>', methods=['GET'])
+def get_video_notes(video_id):
+    cache_key = f"{video_id}"
+    if cache_key in notes_cache:
+        video_title = get_video_title(video_id)
+        return jsonify({
+            "notes": notes_cache[cache_key]["content"],
+            "video_id": video_id,
+            "video_title": video_title
+        })
+    else:
+        return jsonify({"error": "Notes not found for this video"}), 404
 
 @app.route('/api/generate-quiz', methods=['POST'])
 def create_quiz():

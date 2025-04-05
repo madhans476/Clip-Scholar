@@ -469,55 +469,16 @@
                     </div>
                 </div>
                 
-                <!-- Recently processed videos -->
+                
                 <div class="recent-videos animate-in" style="animation-delay: 0.4s;">
                     <h3 class="mb-4">Recently Processed Videos</h3>
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="video-card">
-                                <div class="video-thumbnail">
-                                    <i class="bi bi-play-circle fs-1"></i>
-                                </div>
-                                <div class="video-info">
-                                    <div class="video-title">Introduction to Machine Learning Algorithms</div>
-                                    <div class="video-meta">
-                                        <span>10:25</span>
-                                        <span>2 days ago</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="video-card">
-                                <div class="video-thumbnail">
-                                    <i class="bi bi-play-circle fs-1"></i>
-                                </div>
-                                <div class="video-info">
-                                    <div class="video-title">History of Ancient Rome: The Republic Era</div>
-                                    <div class="video-meta">
-                                        <span>15:42</span>
-                                        <span>3 days ago</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="video-card">
-                                <div class="video-thumbnail">
-                                    <i class="bi bi-play-circle fs-1"></i>
-                                </div>
-                                <div class="video-info">
-                                    <div class="video-title">Python Programming for Beginners: Functions and Modules</div>
-                                    <div class="video-meta">
-                                        <span>18:36</span>
-                                        <span>4 days ago</span>
-                                    </div>
-                                </div>
-                            </div>
+                    <div class="row" id="recent-videos-container">
+                        <!-- Will be populated dynamically -->
+                        <div class="col-12 text-center text-muted" id="no-recent-videos">
+                            <p>No recently processed videos</p>
                         </div>
                     </div>
                 </div>
-                
                 
                 
                 <!-- Feature highlights -->
@@ -627,6 +588,89 @@
         // Initialize animations
         window.addEventListener('scroll', animateElements);
         window.addEventListener('load', animateElements);
+
+        function loadRecentVideos() {
+    fetch('/api/recent-videos')
+        .then(response => response.json())
+        .then(videos => {
+            const container = document.getElementById('recent-videos-container');
+            
+            if (videos.length === 0) {
+                document.getElementById('no-recent-videos').style.display = 'block';
+                return;
+            }
+            
+            document.getElementById('no-recent-videos').style.display = 'none';
+            container.innerHTML = '';
+            
+            videos.forEach(video => {
+                const videoCard = document.createElement('div');
+                videoCard.className = 'col-md-4 mb-3';
+                videoCard.innerHTML = `
+                    <div class="video-card" data-video-id="${video.id}" style="cursor: pointer;">
+                        <div class="video-thumbnail">
+                            <img src="https://img.youtube.com/vi/${video.id}/mqdefault.jpg" alt="thumbnail" class="img-fluid">
+                        </div>
+                        <div class="video-info">
+                            <div class="video-title">${video.title}</div>
+                            <div class="video-meta">
+                                <span>${video.timestamp}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(videoCard);
+                
+                // Add click event to reload this video's notes
+                videoCard.querySelector('.video-card').addEventListener('click', function() {
+                    loadVideoNotes(video.id);
+                });
+            });
+        })
+        .catch(error => console.error('Error loading recent videos:', error));
+}
+
+
+function loadVideoNotes(videoId) {
+    // Show loader
+    document.getElementById('loader').style.display = 'block';
+    document.getElementById('notes-section').classList.add('d-none');
+    
+    fetch(`/api/notes/${videoId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.notes) {
+                // Store video ID
+                currentVideoId = data.video_id;
+                
+                // Set notes content
+                document.getElementById('notes-content').innerHTML = marked.parse(data.notes);
+                
+                // Update video preview
+                const embedUrl = `https://www.youtube.com/embed/${data.video_id}`;
+                document.getElementById('youtube-embed').src = embedUrl;
+                document.getElementById('video-preview').classList.remove('d-none');
+                
+                // Show notes section
+                document.getElementById('notes-section').classList.remove('d-none');
+                
+                // Update session storage to share video ID with quiz page
+                sessionStorage.setItem('current_video_id', data.video_id);
+                
+                // Scroll to notes section
+                document.getElementById('notes-section').scrollIntoView({ behavior: 'smooth' });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to load notes. Please try again.');
+        })
+        .finally(() => {
+            document.getElementById('loader').style.display = 'none';
+        });
+}
+
+
         
         document.getElementById('youtube-form').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -674,6 +718,8 @@
                     // Scroll to notes section
                     document.getElementById('notes-section').scrollIntoView({ behavior: 'smooth' });
                     
+                    // Update recent videos
+                    loadRecentVideos();
                 } else {
                     alert(`Error: ${data.error}`);
                 }
@@ -813,6 +859,14 @@
             const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl);
             });
+
+            loadRecentVideos();
+    
+            // Check if we have a recently viewed video
+            const lastVideoId = sessionStorage.getItem('current_video_id');
+            if (lastVideoId) {
+                loadVideoNotes(lastVideoId);
+            }
         });
     </script>
 </body>
