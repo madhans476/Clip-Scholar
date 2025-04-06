@@ -10,6 +10,9 @@ from youtube_transcript_api import YouTubeTranscriptApi
 import uuid
 from mistralai import Mistral
 from supadata import Supadata, SupadataError
+from bs4 import BeautifulSoup
+from datetime import datetime
+
 app = Flask(__name__)
 CORS(app)
 
