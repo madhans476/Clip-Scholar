@@ -274,5 +274,75 @@ def download_notes(video_id):
         mimetype="text/markdown"
     )
 
+
+def generate_flashcards(notes, num_flashcards, difficulty_level):
+    """Generate flashcards based on notes content."""
+    
+    prompt = f"""Based on the main topic of the following notes, generate {num_flashcards} flashcards with {difficulty_level} difficulty level.
+    For each flashcard:
+    1. Create a front side with a question, concept name, or term
+    2. Create a back side with the answer, explanation, or definition
+    3. Enhance the content with additional context from external resources for broader understanding where appropriate
+    4. Include relevant examples or analogies where helpful
+    5. Format the back side with proper markdown with bullet points, emphasis, and clear structure where appropriate
+    6. If applicable, add citations to academic papers, books, or authoritative sources using APA format [Author, Year]
+    
+     FORMAT YOUR RESPONSE STRICTLY AS A VALID JSON ARRAY of objects with keys "front" and "back". For example:
+    [
+      left bracket
+        "front": "Question or concept 1",
+        "back": "Answer or explanation 1"
+      right bracket,
+      left bracket
+        "front": "Question or concept 2",
+        "back": "Answer or explanation 2"
+      right bracket
+    ]
+    
+    Ensure the output is ONLY the JSON array with no additional text, markdown, or explanations before or after it.
+    
+    Notes:
+    {notes}"""
+    
+    response = run_mistral(prompt)
+
+    try:
+        # Find JSON-like content between square brackets
+        json_match = re.search(r'\[\s*{.+}\s*\]', response, re.DOTALL)
+
+        if json_match:
+            return json.loads(json_match.group(0))
+        else:
+            return {"error": "Could not extract flashcard data from generated response"}
+    except json.JSONDecodeError:
+        return {"error": "Invalid JSON format in generated flashcards", "raw": response}
+
+# Add this new route
+@app.route('/flashcards')
+def flashcards_page():
+    return render_template('flashcards.html')
+
+# Add this new API endpoint
+@app.route('/api/generate-flashcards', methods=['POST'])
+def create_flashcards():
+    data = request.json
+    video_id = data.get('video_id')
+    num_flashcards = data.get('num_flashcards', 10)
+    difficulty_level = data.get('difficulty')
+    
+    if not video_id:
+        return jsonify({"error": "Missing video_id parameter"}), 400
+    
+    # Create cache key that includes style and citations preference
+    cache_key = f"{video_id}"
+    
+    if cache_key not in notes_cache:
+        return jsonify({"error": "Notes not found. Please generate notes first."}), 404
+    
+    flashcard_data = generate_flashcards(notes_cache[cache_key]["content"], num_flashcards, difficulty_level)
+
+    return jsonify(flashcard_data)
+
+
 if __name__ == '__main__':
     app.run(debug=True)
