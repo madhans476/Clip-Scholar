@@ -13,7 +13,7 @@
 
 
 
-## 🚀 About Clip Scholar  
+## About Clip Scholar  
 In today’s digital education landscape, video-based learning is widely used but comes with challenges like time-consuming information retrieval and varying content density.  
 **Clip Scholar** addresses these challenges by leveraging **Large Language Models (LLM)** to automatically generate:  
 - 📄 **Structured Notes** from video transcripts  
@@ -24,7 +24,7 @@ This AI-powered solution enhances accessibility and personalization in learning.
 
 
 
-## ✨ Features  
+## Features  
 ✅ **Transcript Extraction** – Retrieves YouTube video transcripts  
 ✅ **Notes Generation** – Converts transcripts into well-structured notes  
 ✅ **Quiz Creation** – Generates MCQs, Fill-in-the-blanks, and Q&A formats  
@@ -34,22 +34,23 @@ This AI-powered solution enhances accessibility and personalization in learning.
 ---
 
 ## Project Pipeline
+### System Architecture
 ![Alt text](sample/image.png)
 
-## Notes Generation Data Flow Diagrams(DFD)
+### Notes Generation Data Flow Diagrams(DFD)
 ![Screenshot 2025-04-06 233208 1](https://github.com/user-attachments/assets/b2ab6d6f-baab-4ba4-a07c-5f135bdc78b3)
 
 
-## Flashcards Generation DFD
+### Flashcards Generation DFD
 ![Screenshot 2025-04-06 233511 1](https://github.com/user-attachments/assets/19147cef-8fc4-44d6-a611-284ecf426227)
 
 
-## Quiz Generation DFD
+### Quiz Generation DFD
 ![Quiz_g](https://github.com/user-attachments/assets/aebcce09-f3e0-477f-b5d2-691e502e876d)
 
 ---
 
-## 🛠️ Tech Stack  
+## Tech Stack  
 - **Backend**: Python (Flask), [YouTube Transcipt API](https://pypi.org/project/youtube-transcript-api/) or [Supadata](https://supadata.ai/) (For Youtube transcription extraction)
 - **AI Model**: [Mistral-Large-2411](https://docs.mistral.ai/getting-started/models/models_overview/) (LLM for text generation tasks)  
 - **Frontend**: HTML, CSS, Bootstrap  
@@ -69,7 +70,7 @@ This AI-powered solution enhances accessibility and personalization in learning.
 
 
 
-## 📌 Installation & Setup  
+## Installation & Setup  
 
 ### **1️. Clone the Repository**  
 ```bash
