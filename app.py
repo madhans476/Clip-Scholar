@@ -12,7 +12,7 @@ from bs4 import BeautifulSoup
 app = Flask(__name__)
 CORS(app)
 
-api_key = "BHOYy25hmsTZ5hZrAObwW9UQRDjldiLI"
+api_key = ""
 def run_mistral(user_message, model="mistral-large-latest"):
     client = Mistral(api_key=api_key)
     messages = [
